@@ -3,17 +3,25 @@
 Algorithms for storing, manipulating, and analyzing geospatial data.
 
 ## Developing
+
+1. Activate venv
+    ``` bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
 1. Install python requirements
     ``` bash
-    source .venv/bin/activate
-    pip3 install -r requirements.txt
+    make install
     ```
+1. Run tests
+    ``` bash 
+    make test
+    ``` 
 
 ## Updating Requirements
 
 1. Add requirement to `requirements.in`
 1. Compile the `requirements.txt` file
     ``` bash
-    python3 -m pip install pip-tools
-    pip-compile --output-file=requirements.txt requirements.in
+    make pip-compile
     ```
