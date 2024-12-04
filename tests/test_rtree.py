@@ -63,13 +63,22 @@ def test_search():
     )
     root_node.children = [bedstuy_node, fort_greene_clinton_hill_node]
     bedstuy_node.children = [decatur_node, jackie_robinson_node]
-    fort_greene_clinton_hill_node = [fort_greene_node, south_oxford_node]
+    fort_greene_clinton_hill_node.children = [fort_greene_node, south_oxford_node]
     idx = rtree.Index()
     idx.root = root_node
 
     # test search
     node = idx.search(decatur_node.bbox)
     assert node == bedstuy_node
+
+    node = idx.search(jackie_robinson_node.bbox)
+    assert node == bedstuy_node
+
+    node = idx.search(south_oxford_node.bbox)
+    assert node == fort_greene_clinton_hill_node
+
+    node = idx.search(fort_greene_node.bbox)
+    assert node == fort_greene_clinton_hill_node
 
 
 @pytest.mark.skip
