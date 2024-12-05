@@ -1,5 +1,6 @@
 from shapely import bounds as make_bounds
-from shapely import union
+from shapely import box as make_box
+from shapely import contains, union
 
 from geospatial_algos.geospatial_algos import rtree  # type: ignore
 
@@ -150,7 +151,7 @@ def test_search():
     assert nodes[0] == decatur_node
 
 
-def test_insert():
+def test_insert__entry_not_contained_in_current_bounds():
     # setup test data
     south_oxford = {
         "type": "Feature",
@@ -172,10 +173,86 @@ def test_insert():
         "properties": {"name": "Decatur"},
         "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
     }
-    lincoln_terrace = {
+
+    def extract_bounds(geo_feature: dict) -> tuple:
+        x, y = geo_feature["geometry"]["coordinates"]
+        return (x, y, x, y)
+
+    def extract_name(geo_feature: dict) -> str:
+        return geo_feature["properties"]["name"]
+
+    idx = rtree.Index()
+
+    # test insert decatur
+    idx.insert(extract_name(decatur), extract_bounds(decatur))
+    assert len(idx.root.children) == 1
+    assert idx.root.children[0].label == extract_name(decatur)
+    assert idx.root.bbox == make_box(*extract_bounds(decatur))
+
+    # test insert jackie robinson
+    idx.insert(extract_name(jackie_robinson), extract_bounds(jackie_robinson))
+    assert len(idx.root.children) == 2
+    child_names = [child.label for child in idx.root.children]
+    assert sorted(child_names) == [extract_name(decatur), extract_name(jackie_robinson)]
+    assert contains(idx.root.bbox, make_box(*extract_bounds(decatur)))
+    assert contains(idx.root.bbox, make_box(*extract_bounds(jackie_robinson)))
+
+    # test insert fort greene
+    idx.insert(extract_name(fort_greene), extract_bounds(fort_greene))
+    assert len(idx.root.children) == 2
+    fort_greene_node, bedstuy_node = idx.root.children
+
+    assert len(bedstuy_node.children) == 2
+    bedstuy_child_names = [child.label for child in bedstuy_node.children]
+    assert sorted(bedstuy_child_names) == [
+        extract_name(decatur),
+        extract_name(jackie_robinson),
+    ]
+    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(decatur)))
+    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(jackie_robinson)))
+
+    assert len(fort_greene_node.children) == 1
+    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(fort_greene)))
+
+    # test insert south oxford
+    idx.insert(extract_name(south_oxford), extract_bounds(south_oxford))
+    # index should have root
+    # two children - bedstuy, fort greene
+    # bedstuy has two children - decatur + jackie
+    # fort greene has two children - fort greene + south oxford
+    assert len(idx.root.children) == 2
+    fort_greene_node, bedstuy_node = idx.root.children
+
+    assert len(bedstuy_node.children) == 2
+    bedstuy_child_names = [child.label for child in bedstuy_node.children]
+    assert sorted(bedstuy_child_names) == [
+        extract_name(decatur),
+        extract_name(jackie_robinson),
+    ]
+    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(decatur)))
+    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(jackie_robinson)))
+
+    assert len(fort_greene_node.children) == 2
+    fort_greene_child_names = [child.label for child in fort_greene_node.children]
+    assert sorted(fort_greene_child_names) == [
+        extract_name(fort_greene),
+        extract_name(south_oxford),
+    ]
+    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(fort_greene)))
+    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(south_oxford)))
+
+
+def test_insert__entry_contained_in_current_bounds():
+    # setup test data
+    jackie_robinson = {
         "type": "Feature",
-        "properties": {"name": "Lincoln Terrace"},
-        "geometry": {"type": "Point", "coordinates": [-73.925451, 40.668831]},
+        "properties": {"name": "Jackie Robinson"},
+        "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
+    }
+    decatur = {
+        "type": "Feature",
+        "properties": {"name": "Decatur"},
+        "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
     }
 
     def extract_bounds(geo_feature: dict) -> tuple:
@@ -187,29 +264,32 @@ def test_insert():
 
     idx = rtree.Index()
 
-    # test insert
+    idx = rtree.Index()
+
+    # test insert decatur
     idx.insert(extract_name(decatur), extract_bounds(decatur))
-    # index should have root
-    # one child - decatur
+    assert len(idx.root.children) == 1
+    assert idx.root.children[0].label == extract_name(decatur)
+    assert idx.root.bbox == make_box(*extract_bounds(decatur))
 
+    # test insert jackie robinson
     idx.insert(extract_name(jackie_robinson), extract_bounds(jackie_robinson))
-    # index should have root
-    # two children - decatur + jackie
+    assert len(idx.root.children) == 2
+    child_names = [child.label for child in idx.root.children]
+    assert sorted(child_names) == [extract_name(decatur), extract_name(jackie_robinson)]
+    assert contains(idx.root.bbox, make_box(*extract_bounds(decatur)))
+    assert contains(idx.root.bbox, make_box(*extract_bounds(jackie_robinson)))
 
-    idx.insert(extract_name(fort_greene), extract_bounds(fort_greene))
-    # index should have root
-    # two children - bedstuy, fort greene
-    # bedstuy has two children - decatur + jackie
-    # fort greene has one child - fort greene
+    # test insert decatur _again_
+    idx.insert(f"{extract_name(decatur)} 2", extract_bounds(decatur))
+    assert len(idx.root.children) == 2
+    decatur_node, jackie_node = idx.root.children
 
-    idx.insert(extract_name(south_oxford), extract_bounds(south_oxford))
-    # index should have root
-    # two children - bedstuy, fort greene
-    # bedstuy has two children - decatur + jackie
-    # fort greene has two children - fort greene + south oxford
+    assert len(decatur_node.children) == 2
+    child_names = [child.label for child in decatur_node.children]
+    assert sorted(child_names) == [extract_name(decatur), f"{extract_name(decatur)} 2"]
+    assert decatur_node.bbox == make_box(*extract_bounds(decatur))
 
-    idx.insert(f"{extract_name(south_oxford)} 2", extract_bounds(south_oxford))
-    # index should have root
-    # two children - bedstuy, fort greene
-    # bedstuy has two children - decatur + jackie
-    # fort greene has two children - fort greene + south oxford
+    assert len(jackie_node.children) == 1
+    assert jackie_node.children[0].label == extract_name(jackie_robinson)
+    assert jackie_node.bbox == make_box(*extract_bounds(jackie_robinson))

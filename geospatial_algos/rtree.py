@@ -64,7 +64,7 @@ class Index:
 
         # scenario 1: index is empty
         if self.root is None:
-            self.root = Node(bounds)
+            self.root = Node(bounds, label=f"Insert {label} New Root")
             self.root.add_child(new_child)
             return
 
@@ -91,8 +91,9 @@ class Index:
 
             parent.reset_children()
             new_parent_bbox = self.get_union_bbox(min_pair[0].bbox, min_pair[1].bbox)
-            new_parent_bounds = make_bounds(new_parent_bbox)
-            new_parent = Node(new_parent_bounds)
+            new_parent = Node(
+                make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
+            )
             new_parent.add_child(min_pair[0])
             new_parent.add_child(min_pair[1])
             parent.add_child(new_parent)
@@ -102,10 +103,13 @@ class Index:
             for child in remaining_children[1:]:
                 new_parent_bbox = self.get_union_bbox(new_parent_bbox, child.bbox)
 
-            new_parent = Node(make_bounds(new_parent_bbox))
+            new_parent = Node(
+                make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
+            )
             for child in remaining_children:
                 new_parent.add_child(child)
             parent.add_child(new_parent)
+            return
 
         # scenario 3: index needs new or updated parent to contain new child
         new_root_bbox = self.get_union_bbox(self.root.bbox, bbox)
@@ -115,9 +119,11 @@ class Index:
             self.root.add_child(new_child)
             return
 
-        new_root = Node(new_root_bounds)
+        new_root = Node(new_root_bounds, label=f"Insert {label} New Root")
         new_parent_bbox = difference(new_root.bbox, self.root.bbox)
-        new_parent = Node(make_bounds(new_parent_bbox))
+        new_parent = Node(
+            make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
+        )
 
         new_parent.add_child(new_child)
         new_root.add_child(new_parent)
