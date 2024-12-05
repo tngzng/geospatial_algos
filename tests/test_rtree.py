@@ -1,5 +1,5 @@
-import pytest
-from shapely import bounds, union
+from shapely import bounds as make_bounds
+from shapely import union
 
 from geospatial_algos.geospatial_algos import rtree  # type: ignore
 
@@ -49,7 +49,7 @@ def test_find_parent_node():
 
     def get_parent_bounds(node1, node2):
         parent_geom = union(node1.bbox, node2.bbox)
-        return bounds(parent_geom)
+        return make_bounds(parent_geom)
 
     fort_greene_clinton_hill_node = rtree.Node(
         get_parent_bounds(fort_greene_node, south_oxford_node),
@@ -126,7 +126,7 @@ def test_search():
 
     def get_parent_bounds(node1, node2):
         parent_geom = union(node1.bbox, node2.bbox)
-        return bounds(parent_geom)
+        return make_bounds(parent_geom)
 
     fort_greene_clinton_hill_node = rtree.Node(
         get_parent_bounds(fort_greene_node, south_oxford_node),
@@ -145,25 +145,71 @@ def test_search():
     idx.root = root_node
 
     # test search
-    nodes = idx.search(bounds(decatur_node.bbox))
+    nodes = idx.search(make_bounds(decatur_node.bbox))
     assert len(nodes) == 1
     assert nodes[0] == decatur_node
 
 
-@pytest.mark.skip
 def test_insert():
-    """
-    index the following point geometries:
+    # setup test data
+    south_oxford = {
+        "type": "Feature",
+        "properties": {"name": "South Oxford"},
+        "geometry": {"type": "Point", "coordinates": [-73.972129, 40.6840711]},
+    }
+    fort_greene = {
+        "type": "Feature",
+        "properties": {"name": "Fort Greene"},
+        "geometry": {"type": "Point", "coordinates": [-73.978382, 40.6898247]},
+    }
+    jackie_robinson = {
+        "type": "Feature",
+        "properties": {"name": "Jackie Robinson"},
+        "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
+    }
+    decatur = {
+        "type": "Feature",
+        "properties": {"name": "Decatur"},
+        "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
+    }
+    lincoln_terrace = {
+        "type": "Feature",
+        "properties": {"name": "Lincoln Terrace"},
+        "geometry": {"type": "Point", "coordinates": [-73.925451, 40.668831]},
+    }
 
-    A-B---
-    ------
-    ------
-    C-D--E
-    """
-    pass
-    # idx = rtree.Index()
-    # idx.insert("A", (1, 1, 1, 1))
-    # idx.insert("C", (4, 1, 4, 1))
-    # idx.insert("B", (1, 3, 1, 3))
-    # idx.insert("E", (4, 5, 4, 5))
-    # idx.insert("D", (4, 3, 4, 3))
+    def extract_bounds(geo_feature: dict) -> tuple:
+        x, y = geo_feature["geometry"]["coordinates"]
+        return (x, y, x, y)
+
+    def extract_name(geo_feature: dict) -> str:
+        return geo_feature["properties"]["name"]
+
+    idx = rtree.Index()
+
+    # test insert
+    idx.insert(extract_name(decatur), extract_bounds(decatur))
+    # index should have root
+    # one child - decatur
+
+    idx.insert(extract_name(jackie_robinson), extract_bounds(jackie_robinson))
+    # index should have root
+    # two children - decatur + jackie
+
+    idx.insert(extract_name(fort_greene), extract_bounds(fort_greene))
+    # index should have root
+    # two children - bedstuy, fort greene
+    # bedstuy has two children - decatur + jackie
+    # fort greene has one child - fort greene
+
+    idx.insert(extract_name(south_oxford), extract_bounds(south_oxford))
+    # index should have root
+    # two children - bedstuy, fort greene
+    # bedstuy has two children - decatur + jackie
+    # fort greene has two children - fort greene + south oxford
+
+    idx.insert(f"{extract_name(south_oxford)} 2", extract_bounds(south_oxford))
+    # index should have root
+    # two children - bedstuy, fort greene
+    # bedstuy has two children - decatur + jackie
+    # fort greene has two children - fort greene + south oxford
