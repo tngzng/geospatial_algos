@@ -14,16 +14,19 @@ from itertools import combinations
 from typing import Optional
 
 import geojson
-from shapely import Polygon
-from shapely import bounds as make_bounds
-from shapely import box as make_box
-from shapely import contains
-from shapely import difference as get_difference
-from shapely import distance as get_distance
-from shapely import intersection as get_intersection
-from shapely import union
 
-Bounds = tuple[float, float, float, float]
+from .geo_utils import (
+    Bounds,
+    Polygon,
+    contains,
+    get_difference,
+    get_distance,
+    get_intersection,
+    make_bounds,
+    make_box,
+    union,
+)
+
 MAX_CHILDREN = 2
 
 

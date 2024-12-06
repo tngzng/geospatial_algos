@@ -1,9 +1,6 @@
 import pytest
-from shapely import Polygon
-from shapely import bounds as make_bounds
-from shapely import box as make_box
-from shapely import contains, union
 
+from geospatial_algos.geospatial_algos import geo_utils  # type: ignore
 from geospatial_algos.geospatial_algos import rtree  # type: ignore
 
 
@@ -16,9 +13,11 @@ def extract_name(geo_feature: dict) -> str:
     return geo_feature["properties"]["name"]
 
 
-def get_parent_bounds(node_1: Polygon, node_2: Polygon) -> rtree.Bounds:
-    parent_geom = union(node_1.bbox, node_2.bbox)
-    return make_bounds(parent_geom)
+def get_parent_bounds(
+    node_1: geo_utils.Polygon, node_2: geo_utils.Polygon
+) -> geo_utils.Bounds:
+    parent_geom = geo_utils.union(node_1.bbox, node_2.bbox)
+    return geo_utils.make_bounds(parent_geom)
 
 
 @pytest.fixture
@@ -138,7 +137,7 @@ def test_search(
     idx.root = root_node
 
     # test search
-    nodes = idx.search(make_bounds(decatur_node.bbox))
+    nodes = idx.search(geo_utils.make_bounds(decatur_node.bbox))
     assert len(nodes) == 1
     assert nodes[0] == decatur_node
 
@@ -152,15 +151,19 @@ def test_insert__entry_not_contained_in_current_bounds(
     idx.insert(extract_name(decatur), extract_bounds(decatur))
     assert len(idx.root.children) == 1
     assert idx.root.children[0].label == extract_name(decatur)
-    assert idx.root.bbox == make_box(*extract_bounds(decatur))
+    assert idx.root.bbox == geo_utils.make_box(*extract_bounds(decatur))
 
     # test insert jackie robinson
     idx.insert(extract_name(jackie_robinson), extract_bounds(jackie_robinson))
     assert len(idx.root.children) == 2
     child_names = [child.label for child in idx.root.children]
     assert sorted(child_names) == [extract_name(decatur), extract_name(jackie_robinson)]
-    assert contains(idx.root.bbox, make_box(*extract_bounds(decatur)))
-    assert contains(idx.root.bbox, make_box(*extract_bounds(jackie_robinson)))
+    assert geo_utils.contains(
+        idx.root.bbox, geo_utils.make_box(*extract_bounds(decatur))
+    )
+    assert geo_utils.contains(
+        idx.root.bbox, geo_utils.make_box(*extract_bounds(jackie_robinson))
+    )
 
     # test insert fort greene
     idx.insert(extract_name(fort_greene), extract_bounds(fort_greene))
@@ -173,11 +176,17 @@ def test_insert__entry_not_contained_in_current_bounds(
         extract_name(decatur),
         extract_name(jackie_robinson),
     ]
-    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(decatur)))
-    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(jackie_robinson)))
+    assert geo_utils.contains(
+        bedstuy_node.bbox, geo_utils.make_box(*extract_bounds(decatur))
+    )
+    assert geo_utils.contains(
+        bedstuy_node.bbox, geo_utils.make_box(*extract_bounds(jackie_robinson))
+    )
 
     assert len(fort_greene_node.children) == 1
-    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(fort_greene)))
+    assert geo_utils.contains(
+        fort_greene_node.bbox, geo_utils.make_box(*extract_bounds(fort_greene))
+    )
 
     # test insert south oxford
     idx.insert(extract_name(south_oxford), extract_bounds(south_oxford))
@@ -190,8 +199,12 @@ def test_insert__entry_not_contained_in_current_bounds(
         extract_name(decatur),
         extract_name(jackie_robinson),
     ]
-    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(decatur)))
-    assert contains(bedstuy_node.bbox, make_box(*extract_bounds(jackie_robinson)))
+    assert geo_utils.contains(
+        bedstuy_node.bbox, geo_utils.make_box(*extract_bounds(decatur))
+    )
+    assert geo_utils.contains(
+        bedstuy_node.bbox, geo_utils.make_box(*extract_bounds(jackie_robinson))
+    )
 
     assert len(fort_greene_node.children) == 2
     fort_greene_child_names = [child.label for child in fort_greene_node.children]
@@ -199,8 +212,12 @@ def test_insert__entry_not_contained_in_current_bounds(
         extract_name(fort_greene),
         extract_name(south_oxford),
     ]
-    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(fort_greene)))
-    assert contains(fort_greene_node.bbox, make_box(*extract_bounds(south_oxford)))
+    assert geo_utils.contains(
+        fort_greene_node.bbox, geo_utils.make_box(*extract_bounds(fort_greene))
+    )
+    assert geo_utils.contains(
+        fort_greene_node.bbox, geo_utils.make_box(*extract_bounds(south_oxford))
+    )
 
 
 def test_insert__entry_contained_in_current_bounds(jackie_robinson, decatur):
@@ -210,15 +227,19 @@ def test_insert__entry_contained_in_current_bounds(jackie_robinson, decatur):
     idx.insert(extract_name(decatur), extract_bounds(decatur))
     assert len(idx.root.children) == 1
     assert idx.root.children[0].label == extract_name(decatur)
-    assert idx.root.bbox == make_box(*extract_bounds(decatur))
+    assert idx.root.bbox == geo_utils.make_box(*extract_bounds(decatur))
 
     # test insert jackie robinson
     idx.insert(extract_name(jackie_robinson), extract_bounds(jackie_robinson))
     assert len(idx.root.children) == 2
     child_names = [child.label for child in idx.root.children]
     assert sorted(child_names) == [extract_name(decatur), extract_name(jackie_robinson)]
-    assert contains(idx.root.bbox, make_box(*extract_bounds(decatur)))
-    assert contains(idx.root.bbox, make_box(*extract_bounds(jackie_robinson)))
+    assert geo_utils.contains(
+        idx.root.bbox, geo_utils.make_box(*extract_bounds(decatur))
+    )
+    assert geo_utils.contains(
+        idx.root.bbox, geo_utils.make_box(*extract_bounds(jackie_robinson))
+    )
 
     # test insert decatur _again_
     idx.insert(f"{extract_name(decatur)} 2", extract_bounds(decatur))
@@ -228,8 +249,8 @@ def test_insert__entry_contained_in_current_bounds(jackie_robinson, decatur):
     assert len(decatur_node.children) == 2
     child_names = [child.label for child in decatur_node.children]
     assert sorted(child_names) == [extract_name(decatur), f"{extract_name(decatur)} 2"]
-    assert decatur_node.bbox == make_box(*extract_bounds(decatur))
+    assert decatur_node.bbox == geo_utils.make_box(*extract_bounds(decatur))
 
     assert len(jackie_node.children) == 1
     assert jackie_node.children[0].label == extract_name(jackie_robinson)
-    assert jackie_node.bbox == make_box(*extract_bounds(jackie_robinson))
+    assert jackie_node.bbox == geo_utils.make_box(*extract_bounds(jackie_robinson))
