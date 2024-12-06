@@ -31,7 +31,7 @@ class Node:
     def __init__(self, bounds: Bounds, label: Optional[str] = None) -> None:
         self.bbox = make_box(*bounds)
         self.label = label
-        self.children = []
+        self.children: list["Node"] = []
 
     def __repr__(self) -> str:
         description = type(self).__name__
@@ -53,7 +53,7 @@ class Node:
 
 class Index:
     def __init__(self) -> None:
-        self.root: Node = None
+        self.root: Optional[Node] = None
         self.labels: set[str] = set()
 
     def search(self, bounds: Bounds) -> list[Node]:
@@ -66,6 +66,10 @@ class Index:
         return self.filter_intersecting(leaf_nodes, bbox)
 
     def find_parent_node(self, bbox: Polygon) -> Optional[Node]:
+        # no data in the index
+        if self.root is None:
+            return None
+
         # the outermost outer bounds of the dataset don't contain the query bbox
         if not contains(self.root.bbox, bbox):
             return None
@@ -88,7 +92,7 @@ class Index:
             leaf_nodes.append(parent)
 
     def get_leaf_nodes(self, parent: Node) -> list[Node]:
-        leaf_nodes = []
+        leaf_nodes: list[Node] = []
         self._get_leaf_nodes(parent, leaf_nodes)
         return leaf_nodes
 
@@ -128,7 +132,8 @@ class Index:
             children = parent.children + [new_child]
             children_by_label = {child.label: child for child in children}
             child_pairs = combinations(children, 2)
-            min_distance, min_pair = float("inf"), None
+            min_pair = next(child_pairs)
+            min_distance = get_distance(min_pair[0].bbox, min_pair[1].bbox)
             for child_pair in child_pairs:
                 distance = get_distance(child_pair[0].bbox, child_pair[1].bbox)
                 if distance < min_distance:
