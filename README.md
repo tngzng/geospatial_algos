@@ -11,11 +11,11 @@ Algorithms for storing, manipulating, and analyzing geospatial data.
     ```
 1. Install python requirements
     ``` bash
-    make install
+    pip3 install -r requirements.txt
     ```
 1. Run tests
     ``` bash 
-    make test
+    pytest tests
     ``` 
 
 ## Updating Requirements
@@ -23,5 +23,6 @@ Algorithms for storing, manipulating, and analyzing geospatial data.
 1. Add requirement to `requirements.in`
 1. Compile the `requirements.txt` file
     ``` bash
-    make pip-compile
+    python3 -m pip install pip-tools
+    pip-compile --output-file=requirements.txt requirements.in
     ```
