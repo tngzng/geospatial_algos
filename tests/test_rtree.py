@@ -1,3 +1,5 @@
+import pytest
+from shapely import Polygon
 from shapely import bounds as make_bounds
 from shapely import box as make_box
 from shapely import contains, union
@@ -5,53 +7,86 @@ from shapely import contains, union
 from geospatial_algos.geospatial_algos import rtree  # type: ignore
 
 
-def test_find_parent_node():
-    # setup test data
-    south_oxford = {
-        "type": "Feature",
-        "properties": {"name": "South Oxford"},
-        "geometry": {"type": "Point", "coordinates": [-73.972129, 40.6840711]},
-    }
-    fort_greene = {
-        "type": "Feature",
-        "properties": {"name": "Fort Greene"},
-        "geometry": {"type": "Point", "coordinates": [-73.978382, 40.6898247]},
-    }
-    jackie_robinson = {
+def extract_bounds(geo_feature: dict) -> tuple:
+    x, y = geo_feature["geometry"]["coordinates"]
+    return (x, y, x, y)
+
+
+def extract_name(geo_feature: dict) -> str:
+    return geo_feature["properties"]["name"]
+
+
+def get_parent_bounds(node_1: Polygon, node_2: Polygon) -> rtree.Bounds:
+    parent_geom = union(node_1.bbox, node_2.bbox)
+    return make_bounds(parent_geom)
+
+
+@pytest.fixture
+def jackie_robinson():
+    return {
         "type": "Feature",
         "properties": {"name": "Jackie Robinson"},
         "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
     }
-    decatur = {
+
+
+@pytest.fixture
+def decatur():
+    return {
         "type": "Feature",
         "properties": {"name": "Decatur"},
         "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
     }
 
-    def extract_bounds(geo_feature: dict) -> tuple:
-        x, y = geo_feature["geometry"]["coordinates"]
-        return (x, y, x, y)
 
-    def extract_name(geo_feature: dict) -> str:
-        return geo_feature["properties"]["name"]
+@pytest.fixture
+def south_oxford():
+    return {
+        "type": "Feature",
+        "properties": {"name": "South Oxford"},
+        "geometry": {"type": "Point", "coordinates": [-73.972129, 40.6840711]},
+    }
 
-    south_oxford_node = rtree.Node(
+
+@pytest.fixture
+def fort_greene():
+    return {
+        "type": "Feature",
+        "properties": {"name": "Fort Greene"},
+        "geometry": {"type": "Point", "coordinates": [-73.978382, 40.6898247]},
+    }
+
+
+@pytest.fixture
+def jackie_robinson_node(jackie_robinson):
+    return rtree.Node(extract_bounds(jackie_robinson), extract_name(jackie_robinson))
+
+
+@pytest.fixture
+def decatur_node(decatur):
+    return rtree.Node(extract_bounds(decatur), extract_name(decatur))
+
+
+@pytest.fixture
+def south_oxford_node(south_oxford):
+    return rtree.Node(
         extract_bounds(south_oxford),
         extract_name(south_oxford),
     )
-    fort_greene_node = rtree.Node(
+
+
+@pytest.fixture
+def fort_greene_node(fort_greene):
+    return rtree.Node(
         extract_bounds(fort_greene),
         extract_name(fort_greene),
     )
-    jackie_robinson_node = rtree.Node(
-        extract_bounds(jackie_robinson), extract_name(jackie_robinson)
-    )
-    decatur_node = rtree.Node(extract_bounds(decatur), extract_name(decatur))
 
-    def get_parent_bounds(node1, node2):
-        parent_geom = union(node1.bbox, node2.bbox)
-        return make_bounds(parent_geom)
 
+def test_find_parent_node(
+    jackie_robinson_node, decatur_node, south_oxford_node, fort_greene_node
+):
+    # setup test data
     fort_greene_clinton_hill_node = rtree.Node(
         get_parent_bounds(fort_greene_node, south_oxford_node),
         "Fort Greene / Clinton Hill",
@@ -82,53 +117,10 @@ def test_find_parent_node():
     assert node == fort_greene_clinton_hill_node
 
 
-def test_search():
+def test_search(
+    jackie_robinson_node, decatur_node, south_oxford_node, fort_greene_node
+):
     # setup test data
-    south_oxford = {
-        "type": "Feature",
-        "properties": {"name": "South Oxford"},
-        "geometry": {"type": "Point", "coordinates": [-73.972129, 40.6840711]},
-    }
-    fort_greene = {
-        "type": "Feature",
-        "properties": {"name": "Fort Greene"},
-        "geometry": {"type": "Point", "coordinates": [-73.978382, 40.6898247]},
-    }
-    jackie_robinson = {
-        "type": "Feature",
-        "properties": {"name": "Jackie Robinson"},
-        "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
-    }
-    decatur = {
-        "type": "Feature",
-        "properties": {"name": "Decatur"},
-        "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
-    }
-
-    def extract_bounds(geo_feature: dict) -> tuple:
-        x, y = geo_feature["geometry"]["coordinates"]
-        return (x, y, x, y)
-
-    def extract_name(geo_feature: dict) -> str:
-        return geo_feature["properties"]["name"]
-
-    south_oxford_node = rtree.Node(
-        extract_bounds(south_oxford),
-        extract_name(south_oxford),
-    )
-    fort_greene_node = rtree.Node(
-        extract_bounds(fort_greene),
-        extract_name(fort_greene),
-    )
-    jackie_robinson_node = rtree.Node(
-        extract_bounds(jackie_robinson), extract_name(jackie_robinson)
-    )
-    decatur_node = rtree.Node(extract_bounds(decatur), extract_name(decatur))
-
-    def get_parent_bounds(node1, node2):
-        parent_geom = union(node1.bbox, node2.bbox)
-        return make_bounds(parent_geom)
-
     fort_greene_clinton_hill_node = rtree.Node(
         get_parent_bounds(fort_greene_node, south_oxford_node),
         "Fort Greene / Clinton Hill",
@@ -151,36 +143,9 @@ def test_search():
     assert nodes[0] == decatur_node
 
 
-def test_insert__entry_not_contained_in_current_bounds():
-    # setup test data
-    south_oxford = {
-        "type": "Feature",
-        "properties": {"name": "South Oxford"},
-        "geometry": {"type": "Point", "coordinates": [-73.972129, 40.6840711]},
-    }
-    fort_greene = {
-        "type": "Feature",
-        "properties": {"name": "Fort Greene"},
-        "geometry": {"type": "Point", "coordinates": [-73.978382, 40.6898247]},
-    }
-    jackie_robinson = {
-        "type": "Feature",
-        "properties": {"name": "Jackie Robinson"},
-        "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
-    }
-    decatur = {
-        "type": "Feature",
-        "properties": {"name": "Decatur"},
-        "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
-    }
-
-    def extract_bounds(geo_feature: dict) -> tuple:
-        x, y = geo_feature["geometry"]["coordinates"]
-        return (x, y, x, y)
-
-    def extract_name(geo_feature: dict) -> str:
-        return geo_feature["properties"]["name"]
-
+def test_insert__entry_not_contained_in_current_bounds(
+    jackie_robinson, decatur, south_oxford, fort_greene
+):
     idx = rtree.Index()
 
     # test insert decatur
@@ -216,10 +181,6 @@ def test_insert__entry_not_contained_in_current_bounds():
 
     # test insert south oxford
     idx.insert(extract_name(south_oxford), extract_bounds(south_oxford))
-    # index should have root
-    # two children - bedstuy, fort greene
-    # bedstuy has two children - decatur + jackie
-    # fort greene has two children - fort greene + south oxford
     assert len(idx.root.children) == 2
     fort_greene_node, bedstuy_node = idx.root.children
 
@@ -242,28 +203,7 @@ def test_insert__entry_not_contained_in_current_bounds():
     assert contains(fort_greene_node.bbox, make_box(*extract_bounds(south_oxford)))
 
 
-def test_insert__entry_contained_in_current_bounds():
-    # setup test data
-    jackie_robinson = {
-        "type": "Feature",
-        "properties": {"name": "Jackie Robinson"},
-        "geometry": {"type": "Point", "coordinates": [-73.9284951, 40.6806745]},
-    }
-    decatur = {
-        "type": "Feature",
-        "properties": {"name": "Decatur"},
-        "geometry": {"type": "Point", "coordinates": [-73.9355312, 40.6818194]},
-    }
-
-    def extract_bounds(geo_feature: dict) -> tuple:
-        x, y = geo_feature["geometry"]["coordinates"]
-        return (x, y, x, y)
-
-    def extract_name(geo_feature: dict) -> str:
-        return geo_feature["properties"]["name"]
-
-    idx = rtree.Index()
-
+def test_insert__entry_contained_in_current_bounds(jackie_robinson, decatur):
     idx = rtree.Index()
 
     # test insert decatur
