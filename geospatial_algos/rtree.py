@@ -66,10 +66,11 @@ class Index:
         return self.filter_intersecting(leaf_nodes, bbox)
 
     def find_parent_node(self, bbox: Polygon) -> Optional[Node]:
-        # the outermost bounds of the dataset don't contain the bounds
+        # the outermost outer bounds of the dataset don't contain the query bbox
         if not contains(self.root.bbox, bbox):
             return None
 
+        # traverse children to find the smallest bbox that contains the query bbox
         parent = self.root
         while True:
             if eligible_child := next(
@@ -108,7 +109,8 @@ class Index:
 
         # scenario 1: index is empty
         if self.root is None:
-            self.root = Node(bounds, label=f"Insert {label} New Root")
+            # TODO: add helper to standardize auto-generated labels
+            self.root = Node(bounds, label=f"New Root: {label}")
             self.root.add_child(new_child)
             return
 
@@ -139,7 +141,7 @@ class Index:
             parent.reset_children()
             new_parent_bbox = self.get_union_bbox(min_pair[0].bbox, min_pair[1].bbox)
             new_parent = Node(
-                make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
+                make_bounds(new_parent_bbox), label=f"New Parent 1: {label}"
             )
             new_parent.add_child(min_pair[0])
             new_parent.add_child(min_pair[1])
@@ -151,7 +153,7 @@ class Index:
                 new_parent_bbox = self.get_union_bbox(new_parent_bbox, child.bbox)
 
             new_parent = Node(
-                make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
+                make_bounds(new_parent_bbox), label=f"New Parent 2: {label}"
             )
             for child in remaining_children:
                 new_parent.add_child(child)
@@ -166,11 +168,9 @@ class Index:
             self.root.add_child(new_child)
             return
 
-        new_root = Node(new_root_bounds, label=f"Insert {label} New Root")
+        new_root = Node(new_root_bounds, label=f"New Root: {label}")
         new_parent_bbox = get_difference(new_root.bbox, self.root.bbox)
-        new_parent = Node(
-            make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
-        )
+        new_parent = Node(make_bounds(new_parent_bbox), label=f"New Parent: {label}")
 
         new_parent.add_child(new_child)
         new_root.add_child(new_parent)
