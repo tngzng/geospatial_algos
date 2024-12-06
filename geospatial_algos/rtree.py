@@ -17,9 +17,11 @@ import geojson
 from shapely import Polygon
 from shapely import bounds as make_bounds
 from shapely import box as make_box
-from shapely import contains, difference
+from shapely import contains
+from shapely import difference as get_difference
 from shapely import distance as get_distance
-from shapely import intersection, union
+from shapely import intersection as get_intersection
+from shapely import union
 
 Bounds = tuple[float, float, float, float]
 MAX_CHILDREN = 2
@@ -31,7 +33,7 @@ class Node:
         self.label = label
         self.children = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         description = type(self).__name__
         if self.label:
             description = f"{description} '{self.label}'"
@@ -53,6 +55,48 @@ class Index:
     def __init__(self) -> None:
         self.root: Node = None
         self.labels: set[str] = set()
+
+    def search(self, bounds: Bounds) -> list[Node]:
+        bbox = make_box(*bounds)
+        parent = self.find_parent_node(bbox)
+        if parent is None:
+            return []
+
+        leaf_nodes = self.get_leaf_nodes(parent)
+        return self.filter_intersecting(leaf_nodes, bbox)
+
+    def find_parent_node(self, bbox: Polygon) -> Optional[Node]:
+        # the outermost bounds of the dataset don't contain the bounds
+        if not contains(self.root.bbox, bbox):
+            return None
+
+        parent = self.root
+        while True:
+            if eligible_child := next(
+                (child for child in parent.children if contains(child.bbox, bbox)), None
+            ):
+                parent = eligible_child
+            else:
+                return parent
+
+    def _get_leaf_nodes(self, parent: Node, leaf_nodes: list[Node]) -> None:
+        if children := parent.children:
+            for child in children:
+                self._get_leaf_nodes(child, leaf_nodes)
+        else:
+            leaf_nodes.append(parent)
+
+    def get_leaf_nodes(self, parent: Node) -> list[Node]:
+        leaf_nodes = []
+        self._get_leaf_nodes(parent, leaf_nodes)
+        return leaf_nodes
+
+    def filter_intersecting(self, nodes: list[Node], bbox: Polygon) -> list[Node]:
+        return [
+            node
+            for node in nodes
+            if node.bbox == bbox or get_intersection(node.bbox, bbox)
+        ]
 
     def insert(self, label: str, bounds: Bounds) -> None:
         assert (
@@ -76,6 +120,9 @@ class Index:
                 parent.add_child(new_child)
                 return
 
+            # TODO: reconsider this approach if MAX_CHILDREN is increased
+            # taking the two closest children might not make sense if there are
+            # five children, and the two closest are centrally located
             children = parent.children + [new_child]
             children_by_label = {child.label: child for child in children}
             child_pairs = combinations(children, 2)
@@ -120,7 +167,7 @@ class Index:
             return
 
         new_root = Node(new_root_bounds, label=f"Insert {label} New Root")
-        new_parent_bbox = difference(new_root.bbox, self.root.bbox)
+        new_parent_bbox = get_difference(new_root.bbox, self.root.bbox)
         new_parent = Node(
             make_bounds(new_parent_bbox), label=f"Insert {label} New Parent"
         )
@@ -133,43 +180,3 @@ class Index:
     def get_union_bbox(self, bbox_1: Polygon, bbox_2: Polygon) -> Bounds:
         union_geom = union(bbox_1, bbox_2) if bbox_1 != bbox_2 else bbox_1
         return union_geom
-
-    def find_parent_node(self, bbox: Polygon) -> Optional[Node]:
-        # the outermost bounds of the dataset don't contain the bounds
-        if not contains(self.root.bbox, bbox):
-            return None
-
-        parent = self.root
-        while True:
-            if eligible_child := next(
-                (child for child in parent.children if contains(child.bbox, bbox)), None
-            ):
-                parent = eligible_child
-            else:
-                return parent
-
-    def _get_leaf_nodes(self, parent: Node, leaf_nodes: list[Node]) -> None:
-        if children := parent.children:
-            for child in children:
-                self._get_leaf_nodes(child, leaf_nodes)
-        else:
-            leaf_nodes.append(parent)
-
-    def get_leaf_nodes(self, parent: Node) -> list[Node]:
-        leaf_nodes = []
-        self._get_leaf_nodes(parent, leaf_nodes)
-        return leaf_nodes
-
-    def filter_intersecting(self, nodes: list[Node], bbox: Polygon) -> list[Node]:
-        return [
-            node for node in nodes if node.bbox == bbox or intersection(node.bbox, bbox)
-        ]
-
-    def search(self, bounds: Bounds) -> list[Node]:
-        bbox = make_box(*bounds)
-        parent = self.find_parent_node(bbox)
-        if parent is None:
-            return []
-
-        leaf_nodes = self.get_leaf_nodes(parent)
-        return self.filter_intersecting(leaf_nodes, bbox)
