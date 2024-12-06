@@ -6,13 +6,19 @@
 #
 exceptiongroup==1.2.2
     # via pytest
+geojson==3.1.0
+    # via -r requirements.in
 iniconfig==2.0.0
     # via pytest
+numpy==2.0.2
+    # via shapely
 packaging==24.2
     # via pytest
 pluggy==1.5.0
     # via pytest
 pytest==8.3.4
+    # via -r requirements.in
+shapely==2.0.6
     # via -r requirements.in
 tomli==2.2.1
     # via pytest
