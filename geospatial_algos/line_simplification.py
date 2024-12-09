@@ -12,28 +12,30 @@ Resources:
 from .geo_utils import LineString, Point, PointType, get_distance
 
 
-def _simplify(
-    polyline: LineString, simplified_points: list[PointType], epsilon: float = 0.0
-) -> None:
-    first, last = polyline.coords[0], polyline.coords[-1]
+def _simplify(line_coords: list[PointType], epsilon: float = 0.0) -> list[PointType]:
+    if len(line_coords) <= 2:
+        return line_coords
+
+    first, last = line_coords[0], line_coords[-1]
     baseline = LineString([first, last])
 
-    for i, point in enumerate(polyline.coords):
-        if get_distance(baseline, Point(point)) > epsilon:
-            simplified_points.append(point)
-            # TODO: figure out how to handle correct ordering of points
-            # may have to return line segments from recursive functions and
-            # stitch them together correctly in the end
-            # depending on if they were recursed from the left or right sides...
-            if len(polyline.coords[0:i]) > 2:
-                _simplify(LineString(polyline.coords[0:i]), simplified_points, epsilon)
-            if len(polyline.coords[i:-1]) > 2:
-                _simplify(LineString(polyline.coords[i:-1]), simplified_points, epsilon)
+    notable_point_idx = next(
+        (
+            idx
+            for idx, coord in enumerate(line_coords)
+            if get_distance(baseline, Point(coord)) > epsilon
+        ),
+        None,
+    )
+    if notable_point_idx:
+        left = _simplify(line_coords[:notable_point_idx], epsilon)
+        right = _simplify(line_coords[notable_point_idx:], epsilon)
+        return left + right
+
+    else:
+        return [first, last]
 
 
 def simplify(polyline: LineString, epsilon: float = 0.0) -> LineString:
-    first, last = polyline.coords[0], polyline.coords[-1]
-    simplified_points: list[PointType] = [first]
-    _simplify(polyline, simplified_points, epsilon)
-    simplified_points.append(last)
+    simplified_points = _simplify(polyline.coords, epsilon)
     return LineString(simplified_points)
