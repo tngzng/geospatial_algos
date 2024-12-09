@@ -16,7 +16,7 @@ from typing import Optional
 import geojson
 
 from .geo_utils import (
-    Bounds,
+    BoundsType,
     Polygon,
     contains,
     get_difference,
@@ -31,7 +31,7 @@ MAX_CHILDREN = 2
 
 
 class Node:
-    def __init__(self, bounds: Bounds, label: Optional[str] = None) -> None:
+    def __init__(self, bounds: BoundsType, label: Optional[str] = None) -> None:
         self.bbox = make_box(*bounds)
         self.label = label
         self.children: list["Node"] = []
@@ -47,7 +47,7 @@ class Node:
     def add_child(self, child: "Node") -> None:
         self.children.append(child)
 
-    def update_bounds(self, bounds: Bounds) -> None:
+    def update_bounds(self, bounds: BoundsType) -> None:
         self.bbox = make_box(*bounds)
 
     def reset_children(self) -> None:
@@ -59,7 +59,7 @@ class Index:
         self.root: Optional[Node] = None
         self.labels: set[str] = set()
 
-    def search(self, bounds: Bounds) -> list[Node]:
+    def search(self, bounds: BoundsType) -> list[Node]:
         bbox = make_box(*bounds)
         parent = self.find_parent_node(bbox)
         if parent is None:
@@ -106,7 +106,7 @@ class Index:
             if node.bbox == bbox or get_intersection(node.bbox, bbox)
         ]
 
-    def insert(self, label: str, bounds: Bounds) -> None:
+    def insert(self, label: str, bounds: BoundsType) -> None:
         assert (
             label not in self.labels
         ), f"Label {label} already in dataset. Must use a unique name."
@@ -185,6 +185,6 @@ class Index:
         new_root.add_child(self.root)
         self.root = new_root
 
-    def get_union_bbox(self, bbox_1: Polygon, bbox_2: Polygon) -> Bounds:
+    def get_union_bbox(self, bbox_1: Polygon, bbox_2: Polygon) -> BoundsType:
         union_geom = union(bbox_1, bbox_2) if bbox_1 != bbox_2 else bbox_1
         return union_geom

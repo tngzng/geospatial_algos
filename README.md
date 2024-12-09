@@ -2,6 +2,13 @@
 
 Algorithms for storing, manipulating, and analyzing geospatial data.
 
+## Algorithms
+
+### Line Simplification
+Reduce the complexity of a line geometry by removing points that don't meet a distance threshold. 
+
+![Sample output showing a line geometry before and after simplification.](assets/line_simplification.png)
+
 ## Developing
 
 1. Activate venv
