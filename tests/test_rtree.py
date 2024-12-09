@@ -15,7 +15,7 @@ def extract_name(geo_feature: dict) -> str:
 
 def get_parent_bounds(
     node_1: geo_utils.Polygon, node_2: geo_utils.Polygon
-) -> geo_utils.Bounds:
+) -> resType:
     parent_geom = geo_utils.union(node_1.bbox, node_2.bbox)
     return geo_utils.make_bounds(parent_geom)
 
