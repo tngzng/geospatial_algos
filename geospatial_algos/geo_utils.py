@@ -5,6 +5,7 @@ so appends "get_" or "make_" onto functions named as nouns
 """
 
 from shapely import LineString  # noqa
+from shapely import Point  # noqa
 from shapely import Polygon  # noqa
 from shapely import contains  # noqa
 from shapely import from_geojson  # noqa

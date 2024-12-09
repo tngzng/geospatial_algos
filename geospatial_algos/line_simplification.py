@@ -9,7 +9,7 @@ Resources:
 - https://medium.com/@indemfeld/the-ramer-douglas-peucker-algorithm-d542807093e7
 """
 
-from .geo_utils import LineString, PointType, get_distance
+from .geo_utils import LineString, Point, PointType, get_distance
 
 
 def _simplify(
@@ -19,33 +19,21 @@ def _simplify(
     baseline = LineString([first, last])
 
     for i, point in enumerate(polyline.coords):
-        if get_distance(baseline, point) > epsilon:
+        if get_distance(baseline, Point(point)) > epsilon:
             simplified_points.append(point)
-            # TODO: check if it's okay for a point to get duplicatively added to
-            # simplified_points, or would that even be possible bc of the way
-            # we're chopping the linestrings in half before recursing?
-            _simplify(LineString(polyline.coords[0:i]), simplified_points, epsilon)
-            _simplify(LineString(polyline.coords[i:-1]), simplified_points, epsilon)
+            # TODO: figure out how to handle correct ordering of points
+            # may have to return line segments from recursive functions and
+            # stitch them together correctly in the end
+            # depending on if they were recursed from the left or right sides...
+            if len(polyline.coords[0:i]) > 2:
+                _simplify(LineString(polyline.coords[0:i]), simplified_points, epsilon)
+            if len(polyline.coords[i:-1]) > 2:
+                _simplify(LineString(polyline.coords[i:-1]), simplified_points, epsilon)
 
 
 def simplify(polyline: LineString, epsilon: float = 0.0) -> LineString:
-    simplified_points: list[PointType] = []
+    first, last = polyline.coords[0], polyline.coords[-1]
+    simplified_points: list[PointType] = [first]
     _simplify(polyline, simplified_points, epsilon)
+    simplified_points.append(last)
     return LineString(simplified_points)
-
-    # first point (notable point or significant point or good point)
-    # whose distance from the baseline exceeds epsilon
-    # keep that point and discard intermediary points
-    # (points between the first point in the polyline
-    # and the notable point that exceeded the baseline)
-
-    # if no notable point is found, the geometry has been simplified!
-
-    # if a notable point is found, make two new polylines
-    #   one starting with the notable point and
-    #   ending with the last point in the original polyline
-    #
-    #   one starting with the first point in the original polyline
-    #   and ending with the notable point
-
-    #   simplify the two new polylines
