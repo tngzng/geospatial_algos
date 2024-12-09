@@ -1,5 +1,8 @@
 import pytest
 
+from geospatial_algos.geospatial_algos import geo_utils  # type: ignore
+from geospatial_algos.geospatial_algos import line_simplification  # type: ignore
+
 
 @pytest.fixture
 def bk_bridge_park():
@@ -49,3 +52,8 @@ def bk_bridge_park():
             "type": "LineString",
         },
     }
+
+
+def test_simplify(bk_bridge_park):
+    original = geo_utils.from_geojson(bk_bridge_park)
+    simplified = line_simplification.simplify(original)
