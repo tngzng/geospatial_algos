@@ -30,7 +30,7 @@ def _simplify(line_coords: list[PointType], epsilon: float = 0.0) -> list[PointT
     if notable_point_idx:
         left = _simplify([first, line_coords[notable_point_idx]], epsilon)
         right = _simplify(line_coords[notable_point_idx:], epsilon)
-        return left + right
+        return left + right[1:]
 
     else:
         return [first, last]
