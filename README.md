@@ -9,6 +9,11 @@ Reduce the complexity of a line geometry by removing points that don't meet a di
 
 ![Sample output showing a line geometry before and after simplification.](assets/line_simplification.png)
 
+### Convex Hull
+Enclose a set of points in a convex polygon by checking the cross product of vectors for candidate points.
+
+![Sample output showing a concave polygon and it's corresponding convex hull.](assets/convex_hull.png)
+
 ## Developing
 
 1. Activate venv
