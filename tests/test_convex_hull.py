@@ -1,5 +1,7 @@
 import pytest
 
+from geospatial_algos.geospatial_algos import convex_hull  # type: ignore
+
 
 @pytest.fixture
 def star_house():
@@ -41,3 +43,7 @@ def star_house():
             "type": "Polygon",
         },
     }
+
+
+def test_convex_hull(star_house):
+    convex_hull.convex_hull(star_house["geometry"]["coordinates"][0])
