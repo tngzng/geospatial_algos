@@ -7,6 +7,8 @@ sys.path.insert(0, ".")
 from geospatial_algos.geo_utils import get_intersection, make_box
 from geospatial_algos.rtree import Index
 
+NUM_LOOPS = 1_000
+
 public_courts: list[dict] = [
     {
         "type": "Feature",
@@ -103,23 +105,22 @@ idx = Index()
 for court in public_courts:
     idx.insert(extract_name(court), extract_bounds(court))
 
-# make it fair so we're not constantly making the bbox
-# in the brute force approach
+# make it fair so we're not constantly making the bbox in the brute force approach
 for court in public_courts:
     court["bbox"] = make_box(*extract_bounds(court))
 
 # test rtree
-# TODO: time this
 random.shuffle(public_courts)
 rtree_start = time.time()
-for court in public_courts:
-    found = idx.search(extract_bounds(court))
-    try:
-        assert len(found) == 1
-    except AssertionError as e:
-        breakpoint()
-        x = 1
-    assert found[0].label == extract_name(court)
+for _ in range(NUM_LOOPS):
+    for court in public_courts:
+        found = idx.search(extract_bounds(court))
+        try:
+            assert len(found) == 1
+        except AssertionError as e:
+            breakpoint()
+            x = 1
+        assert found[0].label == extract_name(court)
 
 rtree_time = time.time() - rtree_start
 print(f"Rtree took {rtree_time} seconds")
@@ -137,8 +138,6 @@ def brute_force_search(target: dict) -> list[dict]:
     return res
 
 
-NUM_LOOPS = 1_000
-# TODO: time this
 random.shuffle(public_courts)
 brute_force_start = time.time()
 for _ in range(NUM_LOOPS):
