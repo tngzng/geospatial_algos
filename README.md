@@ -18,12 +18,15 @@ Enclose a set of points in a convex polygon by checking the cross product of vec
 Combine data from lower resolution color imagery and higher resolution greyscale imagery to "sharpen" the color imagery, making it appear more detailed.
 
 Input (low-res color photo):
+
 ![Low-res color photo of two tabby cats.](assets/tabby_cats__lowres.png)
 
 Input (hi-res greyscale photo): 
+
 ![Hi-res greyscale photo of two tabby cats.](assets/tabby_cats__greyscale.png)
 
 Pansharpened result:
+
 ![Pansharpened photo of two tabby cats.](assets/tabby_cats__pansharpened.png)
 
 
