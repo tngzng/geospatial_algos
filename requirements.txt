@@ -4,23 +4,70 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
+contourpy==1.3.0
+    # via matplotlib
+cycler==0.12.1
+    # via matplotlib
 exceptiongroup==1.2.2
     # via pytest
+fonttools==4.55.3
+    # via matplotlib
 geojson==3.1.0
     # via -r requirements.in
+imageio==2.36.1
+    # via scikit-image
+importlib-resources==6.4.5
+    # via matplotlib
 iniconfig==2.0.0
     # via pytest
+kiwisolver==1.4.7
+    # via matplotlib
+lazy-loader==0.4
+    # via scikit-image
+matplotlib==3.9.4
+    # via -r requirements.in
+networkx==3.2.1
+    # via scikit-image
 numpy==2.0.2
     # via
     #   -r requirements.in
+    #   contourpy
+    #   imageio
+    #   matplotlib
+    #   scikit-image
+    #   scipy
     #   shapely
+    #   tifffile
 packaging==24.2
-    # via pytest
+    # via
+    #   lazy-loader
+    #   matplotlib
+    #   pytest
+    #   scikit-image
+pillow==11.0.0
+    # via
+    #   imageio
+    #   matplotlib
+    #   scikit-image
 pluggy==1.5.0
     # via pytest
+pyparsing==3.2.0
+    # via matplotlib
 pytest==8.3.4
     # via -r requirements.in
+python-dateutil==2.9.0.post0
+    # via matplotlib
+scikit-image==0.24.0
+    # via -r requirements.in
+scipy==1.13.1
+    # via scikit-image
 shapely==2.0.6
     # via -r requirements.in
+six==1.17.0
+    # via python-dateutil
+tifffile==2024.8.30
+    # via scikit-image
 tomli==2.2.1
     # via pytest
+zipp==3.21.0
+    # via importlib-resources
